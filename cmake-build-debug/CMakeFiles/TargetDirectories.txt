@@ -1,3 +1,0 @@
-/Users/sienahurwitz/Documents/Academic and Professinonal Records/UMD/Plasma Physics Research/force research/Code/C++ calculations/cmake-build-debug/CMakeFiles/CoilCalculations.dir
-/Users/sienahurwitz/Documents/Academic and Professinonal Records/UMD/Plasma Physics Research/force research/Code/C++ calculations/cmake-build-debug/CMakeFiles/edit_cache.dir
-/Users/sienahurwitz/Documents/Academic and Professinonal Records/UMD/Plasma Physics Research/force research/Code/C++ calculations/cmake-build-debug/CMakeFiles/rebuild_cache.dir

@@ -95,16 +95,20 @@ void maxB_plots(Wire coil, int N, string name, double simplex=1e-3){
 /*
  *  This method outputs the force per unit length on a coil over phi∈[0,2\pi] along an axis {x,y,z}
  *  corresponding to an int {0,1,2}, respectively. It is saved to a txt file of the name 'name.txt' in the format
- *  [phi, hifi, lofi], where phi, hifi, and lofi are column vectors. The number of grid points is specified by 'N'.
+ *  [phi, hifi, lofi], where phi, hifi, and lofi are column vectors. The number of grid points is specified by 'N'. The
+ *  choice of the low-fidelity method is specific by 'key', where 0 corresponds to the 1D integral method and 1
+ *  corresponds to the circular approximation method.
  */
-void force_plots(Wire coil, int axis, int N, string name, double epsrel=1e-5, double epsabs=1e-5){
+void force_plots(Wire coil, int axis, int N, string name, int key, double epsrel=1e-5, double epsabs=1e-5){
     FILE *fp;
     name = name + ".txt";
     fp = fopen(name.c_str(),"w");
     for(int i=0; i<N; i++){
         double phi = 2*i*M_PI/N;
         double fhi = f_modified(coil, phi, axis, epsrel, epsabs);
-        double flo = f_1D(coil, phi, axis, 3, -1);
+        double flo;
+        if(key==0){flo = f_1D(coil, phi, axis, 3, -1);}
+        else{flo = f_circular(coil,phi,axis);}
         fprintf(fp, "%e %e %e\n", phi, fhi, flo);
     }
     fclose(fp);
@@ -113,7 +117,7 @@ void force_plots(Wire coil, int axis, int N, string name, double epsrel=1e-5, do
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int main(){
     //Examples:
-    force_plots(Wire::hsx(0.0025, 1, 1), 0, 200, "force", 1e-6, 1e-6);
+//    force_plots(Wire::hsx(0.0025, 1, 1), 0, 200, "force", 5*1e-7, 5*1e-7);
 
 //    contours_1D(Wire::torus(1, 0.01, 1), 0, 60, "torus");
 
@@ -122,4 +126,7 @@ int main(){
 //        contours_1D(Wire::hsx(0.0025,1,1),phi,100, to_string(i));
 //    }
 //    maxB_plots(Wire::hsx(0.0025, 1, 1),200, "maxB");
+
+    force_plots(Wire::hsx(0.00326955182, 1, 1), 0, 200, "force", 1,1e-8, 1e-8);
+
 }

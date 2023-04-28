@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <math.h>
 #include "vectors.cpp"
+#include "integration.cpp"
 using namespace std;
 
 /*
@@ -339,4 +340,18 @@ public:
      * e1 and e2. The Cartesian components are returned.
      */
     valarray<double> e3(double phi) {return cross_product(e1(phi), e2(phi));}
+
+    /*
+     * This function returns the length of the wire by integrating the quantity |dr_c/dphi| over phi.
+     */
+    double length(){
+        auto len_integrand = make_gsl_function([&](double phi){
+            return rc_norm_firstder(phi);
+        });
+
+        double result, abserr;
+        gsl_integration_qags(len_integrand, 0, 2*M_PI, 1e-8, 1e-8,
+                             100,IntegrationWorkspace(100),&result, &abserr);
+        return result;
+    }
 };

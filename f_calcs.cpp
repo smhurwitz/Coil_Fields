@@ -1,3 +1,5 @@
+
+
 #include "b_calcs.cpp"
 #include <functional>
 using namespace std;
@@ -10,7 +12,7 @@ struct ForceData{double phi; Wire wire; int axis;};
  * This is the integrand for the function 'f'.
  */
 static int f_integrand(const int *ndim, const cubareal xx[],
-                                      const int *ncomp, cubareal ff[], void *data){
+                       const int *ncomp, cubareal ff[], void *data){
     // Note that the Cuhre integration routine integrates over a unit cube, so each integration coordinate (below)
     // must be multiplied by a certain factor to ensure the integral has the proper domain.
     ForceData *u = (struct ForceData*)data;
@@ -72,46 +74,42 @@ static int f_modified_integrand(const int *ndim, const cubareal xx[],
     double theta_prime=xx[3]*2*M_PI;
     double phi_prime=xx[4]*2*M_PI;
 
-    if (pow((phi-phi_prime),2)<0.01){
+    if (pow((phi-phi_prime),2)<0.001){
         ff[0]=0;
     }
     else {
-        //Original integrand:
         Point r(s, theta, phi, wire);
         Point r_prime(s_prime, theta_prime, phi_prime, wire);
-//        double denominator = pow(r_prime.distance(r),3);
-        double denominator = pow(r_prime.distance(r)+1e-15,3);
+        double denominator = pow(r_prime.distance(r)+1e-100,3);
         double num1 = s * s_prime * (1 - wire.kappa(phi) * s * cos(theta)) *
                       (1 - wire.kappa(phi_prime) * s_prime * cos(theta_prime))
                       * wire.rc_norm_firstder(r_prime.get_phi());
         valarray<double> e1 = wire.e1(phi);
         valarray<double> e1_prime = wire.e1(phi_prime);
         valarray<double> numerator = cross_product(e1,
-                                                   cross_product(e1_prime, r.get_vector_form()-r_prime.get_vector_form()));
+                                                   cross_product(e1_prime, {r.dx(r_prime), r.dy(r_prime), r.dz(r_prime)}));
 
-        //Integrand to subtract off (from best-fit circle)
         valarray<double> e1_primef = sin(phi_prime - phi) * wire.e2(phi) + cos(phi_prime - phi) * wire.e1(phi);
         valarray<double> e2_primef = cos(phi_prime - phi) * wire.e2(phi) - sin(phi_prime - phi) * wire.e1(phi);
         valarray<double> e3_primef = wire.e3(phi);
         valarray<double> r_prime_cf = wire.rc(phi)
                                       - 1 / (wire.kappa(phi)) * ((cos(phi_prime - phi) - 1) * wire.e2(phi) -
-                                                                 sin(phi_prime - phi) * wire.e1(phi));
+                                                                          sin(phi_prime - phi) * wire.e1(phi));
         valarray<double> r_primef =
                 r_prime_cf + s_prime * cos(theta_prime) * e2_primef + s_prime * sin(theta_prime) * e3_primef;
         valarray<double> r_vec = r.get_vector_form();
-//        double denominator2 = pow(vector_norm(r_vec - r_primef), 3);
-        double denominator2 = pow(vector_norm(r_vec - r_primef)+1e-15, 3);
-
+        double denominator2 = pow(vector_norm(r_vec - r_primef)+1e-100, 3);
         double num12 = s * s_prime * (1 - wire.kappa(phi) * s * cos(theta)) *
                        (1 - wire.kappa(phi) * s_prime * cos(theta_prime)) / (wire.kappa(phi));
         valarray<double> numerator2 = cross_product(wire.e1(phi), cross_product(e1_primef, r_vec - r_primef));
 
-        //Final result:
-        double prefactors = 2*mu_0 * pow(wire.get_I(), 2) / wire.get_a()/wire.get_a();
+        double prefactors = pow(2 * M_PI, 3) * pow(wire.get_a(), 2)
+                            * mu_0 * pow(wire.get_I(), 2) / (4 * pow(M_PI, 3) * pow(wire.get_a(), 4));
         ff[0] = prefactors * (num1 * numerator[axis] / denominator - num12 * numerator2[axis] / denominator2);
     }
     return nan("");
 }
+
 
 /*
  *  This semi-high-fidelity method returns the value of dF/dl the magnetic field at a slice phi and along an axis {x,y,z}
@@ -131,7 +129,7 @@ double f_modified(Wire wire, double phi, int axis, double epsrel=1e-4, double ep
           error, prob);
 
     valarray<double> analytic_result = -mu_0*pow(wire.get_I(),2)*wire.kappa(phi)/(4*M_PI)*(-0.75+
-            log(8/(wire.kappa(phi) * wire.get_a()))) * wire.e2(phi); //analytic force for a torus
+                                                                                           log(8/(wire.kappa(phi) * wire.get_a()))) * wire.e2(phi); //analytic force for a torus
     return integral[0]+analytic_result[axis];
 }
 
@@ -161,4 +159,14 @@ double f_1D(Wire wire, double phi, int axis, int key, int n_points=50){
         return vector_current[0] * b_reg(wire, phi, 1, key, n_points) -
                vector_current[1] * b_reg(wire, phi, 0, key, n_points);
     }
+}
+
+/*
+ * This low-fidelity circular approximation method returns the value of dF/dl the magnetic field at a slice phi and
+ * along an axis {x,y,z} corresponding to an int {0,1,2}, respectively
+ */
+double f_circular(Wire wire, double phi, int axis){
+    valarray<double> analytic_result = -mu_0*pow(wire.get_I(),2)*wire.kappa(phi)/(4*M_PI)*(-0.75+
+            log(8/(wire.kappa(phi) * wire.get_a()))) * wire.e2(phi);
+    return analytic_result[axis];
 }
