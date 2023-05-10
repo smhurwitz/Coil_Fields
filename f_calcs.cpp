@@ -21,23 +21,19 @@ static int f_integrand(const int *ndim, const cubareal xx[],
     double phi = u->phi;
     double s = xx[0]*wire.get_a();
     double theta = xx[1]*2*M_PI;
-    double s_prime=xx[2]*wire.get_a();
-    double theta_prime=xx[3]*2*M_PI;
-    double phi_prime=xx[4]*2*M_PI;
+    double s_p= xx[2] * wire.get_a();
+    double theta_p= xx[3] * 2 * M_PI+theta;
+    double phi_p= xx[4] * 2 * M_PI+phi;
+
     Point r(s, theta, phi, wire);
-    Point r_prime(s_prime, theta_prime, phi_prime, wire);
+    Point r_p(s_p, theta_p, phi_p, wire);
 
+    double denominator = pow(r_p.distance(r)+1e-100, 3);
+    double num1 = s * s_p * (1 - wire.kappa(phi) * s * cos(theta)) * (1 - wire.kappa(phi_p) * s_p * cos(theta_p));
     valarray<double> e1 = wire.e1(phi);
-    valarray<double> e1_prime = wire.e1(phi_prime);
+    valarray<double> numerator = cross_product(e1,cross_product(wire.rc_firstder(phi_p), r.vec_distance(r_p)));
 
-    double denominator = pow(r_prime.distance(r)+1e-100,3);
-    double num1= s*s_prime*(1- wire.kappa(phi) * s * cos(theta))
-                 *(1- wire.kappa(phi_prime) * s_prime * cos(theta_prime))
-                 * wire.rc_norm_firstder(r_prime.get_phi());
-    valarray<double> numerator = cross_product(e1, cross_product(e1_prime, {r.dx(r_prime),r.dy(r_prime),r.dz(r_prime)}));
-
-    ff[0]=num1*numerator[axis]/denominator; //integrand
-    return nan("");
+    ff[0] = (wire.get_a()*wire.get_a())*(num1 * numerator[axis] / denominator);
 }
 
 /*
@@ -53,9 +49,10 @@ double f(Wire wire, double phi, int axis, double epsrel, double epsabs){
     data.wire = wire;
 
     Cuhre(5, 1, f_integrand, &data, 1, epsrel, epsabs, 0,0,
-          1e100, 0,nullptr, nullptr,&nregions, &neval, &fail, integral,
+          1000000000, 0,nullptr, nullptr,&nregions, &neval, &fail, integral,
           error, prob);
-    double prefactors =2*mu_0*pow(wire.get_I(),2)/wire.get_a();
+    cout << neval << endl;
+    double prefactors =(2*mu_0*pow(wire.get_I(),2)/(wire.get_a()*wire.get_a()))/(wire.get_a()*wire.get_a());
     return prefactors*integral[0];
 }
 
@@ -63,60 +60,52 @@ double f(Wire wire, double phi, int axis, double epsrel, double epsabs){
  * This is the integrand for the function 'f_modified'.
  */
 static int f_modified_integrand(const int *ndim, const cubareal xx[],
-                                    const int *ncomp, cubareal ff[], void *data){
+                                const int *ncomp, cubareal ff[], void *data){
     ForceData *u = (struct ForceData*)data;
     int axis = u->axis;
     Wire wire = u->wire;
     double phi = u->phi;
     double s = xx[0]*wire.get_a();
     double theta = xx[1]*2*M_PI;
-    double s_prime=xx[2]*wire.get_a();
-    double theta_prime=xx[3]*2*M_PI;
-    double phi_prime=xx[4]*2*M_PI;
+    double s_p= xx[2] * wire.get_a();
+    double theta_p= xx[3] * 2 * M_PI+theta;
+    double phi_p= xx[4] * 2 * M_PI+phi;
 
-    if (pow((phi-phi_prime),2)<0.001){
-        ff[0]=0;
-    }
-    else {
-        Point r(s, theta, phi, wire);
-        Point r_prime(s_prime, theta_prime, phi_prime, wire);
-        double denominator = pow(r_prime.distance(r)+1e-100,3);
-        double num1 = s * s_prime * (1 - wire.kappa(phi) * s * cos(theta)) *
-                      (1 - wire.kappa(phi_prime) * s_prime * cos(theta_prime))
-                      * wire.rc_norm_firstder(r_prime.get_phi());
-        valarray<double> e1 = wire.e1(phi);
-        valarray<double> e1_prime = wire.e1(phi_prime);
-        valarray<double> numerator = cross_product(e1,
-                                                   cross_product(e1_prime, {r.dx(r_prime), r.dy(r_prime), r.dz(r_prime)}));
+    Point r(s, theta, phi, wire);
+    Point r_p(s_p, theta_p, phi_p, wire);
 
-        valarray<double> e1_primef = sin(phi_prime - phi) * wire.e2(phi) + cos(phi_prime - phi) * wire.e1(phi);
-        valarray<double> e2_primef = cos(phi_prime - phi) * wire.e2(phi) - sin(phi_prime - phi) * wire.e1(phi);
-        valarray<double> e3_primef = wire.e3(phi);
-        valarray<double> r_prime_cf = wire.rc(phi)
-                                      - 1 / (wire.kappa(phi)) * ((cos(phi_prime - phi) - 1) * wire.e2(phi) -
-                                                                          sin(phi_prime - phi) * wire.e1(phi));
-        valarray<double> r_primef =
-                r_prime_cf + s_prime * cos(theta_prime) * e2_primef + s_prime * sin(theta_prime) * e3_primef;
-        valarray<double> r_vec = r.get_vector_form();
-        double denominator2 = pow(vector_norm(r_vec - r_primef)+1e-100, 3);
-        double num12 = s * s_prime * (1 - wire.kappa(phi) * s * cos(theta)) *
-                       (1 - wire.kappa(phi) * s_prime * cos(theta_prime)) / (wire.kappa(phi));
-        valarray<double> numerator2 = cross_product(wire.e1(phi), cross_product(e1_primef, r_vec - r_primef));
+    double denominator = pow(r_p.distance(r) + 1e-100, 3);
+    double num1 = s * s_p * (1 - wire.kappa(phi) * s * cos(theta)) *
+                  (1 - wire.kappa(phi_p) * s_p * cos(theta_p))
+                  * wire.rc_norm_firstder(phi_p);
+    valarray<double> e1 = wire.e1(phi);
+    valarray<double> e2 = wire.e2(phi);
+    valarray<double> e3 = wire.e3(phi);
+    valarray<double> e1_p = wire.e1(phi_p);
+    valarray<double> numerator = cross_product(e1,cross_product(e1_p, {r.dx(r_p), r.dy(r_p), r.dz(r_p)}));
 
-        double prefactors = pow(2 * M_PI, 3) * pow(wire.get_a(), 2)
-                            * mu_0 * pow(wire.get_I(), 2) / (4 * pow(M_PI, 3) * pow(wire.get_a(), 4));
-        ff[0] = prefactors * (num1 * numerator[axis] / denominator - num12 * numerator2[axis] / denominator2);
-    }
+    valarray<double> e1_pf = sin(phi_p - phi) * e2 + cos(phi_p - phi) * e1;
+    valarray<double> e2_pf = cos(phi_p - phi) * e2 - sin(phi_p - phi) * e1;
+    valarray<double> e3_pf = e3;
+    valarray<double> rc_pf = wire.rc(phi)+1/wire.kappa(phi)*((1-cos(phi_p - phi))*e2 +sin(phi_p - phi)*e1);
+
+    valarray<double> r_pf = rc_pf + s_p * cos(theta_p) * e2_pf + s_p * sin(theta_p) * e3_pf;
+    valarray<double> r_vec = r.get_vector_form();
+    double denominator2 = pow(vector_norm(r_vec - r_pf) + 1e-100, 3);
+    double num12 = s * s_p * (1 - wire.kappa(phi) * s * cos(theta)) *
+                   (1 - wire.kappa(phi) * s_p * cos(theta_p)) / (wire.kappa(phi));
+    valarray<double> numerator2 = cross_product(e1, cross_product(e1_pf, r_vec - r_pf));
+
+    ff[0] = (wire.get_a()*wire.get_a())*(num1 * numerator[axis] / denominator - num12 * numerator2[axis] / denominator2);
     return nan("");
 }
-
 
 /*
  *  This semi-high-fidelity method returns the value of dF/dl the magnetic field at a slice phi and along an axis {x,y,z}
  *  corresponding to an int {0,1,2}, respectively. The modified hi-fi method refers to the act of subtracting a known
  *  function off from the integrand of the original hi-fi method in order to make it easier to numerically integrate.
  */
-double f_modified(Wire wire, double phi, int axis, double epsrel=1e-4, double epsabs=1e-4){
+double f_modified(Wire wire, double phi, int axis, double epsrel, double epsabs){
     int nregions, neval, fail;
     cubareal integral[1], error[1], prob[1];
     struct ForceData data;
@@ -125,12 +114,13 @@ double f_modified(Wire wire, double phi, int axis, double epsrel=1e-4, double ep
     data.wire = wire;
 
     Cuhre(5, 1, f_modified_integrand, &data, 1, epsrel, epsabs, 0,0,
-          1e100, 0,nullptr, nullptr,&nregions, &neval, &fail, integral,
+          1000000000, 0,nullptr, nullptr,&nregions, &neval, &fail, integral,
           error, prob);
 
     valarray<double> analytic_result = -mu_0*pow(wire.get_I(),2)*wire.kappa(phi)/(4*M_PI)*(-0.75+
-                                                                                           log(8/(wire.kappa(phi) * wire.get_a()))) * wire.e2(phi); //analytic force for a torus
-    return integral[0]+analytic_result[axis];
+            log(8/(wire.kappa(phi) * wire.get_a()))) * wire.e2(phi); //analytic force for a torus
+    double prefactors =(2*mu_0*pow(wire.get_I(),2)/(wire.get_a()*wire.get_a()))/(wire.get_a()*wire.get_a());
+    return prefactors*integral[0]+analytic_result[axis];
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

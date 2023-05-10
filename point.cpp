@@ -29,9 +29,9 @@ public:
     }
 
     /*
-     * Return the Cartesian distance between this Point and the Point 'x'.
+     * Return the Cartesian vector distance between this Point and the Point 'x'.
      */
-    double distance(Point x){
+    valarray<double> vec_distance(Point x){
         valarray<double> rc = wire.rc(phi); valarray<double> rc_x = wire.rc(x.get_phi());
         valarray<double> e2 = wire.e2(phi); valarray<double> e2_x = wire.e2(x.get_phi());
         valarray<double> e3 = wire.e3(phi); valarray<double> e3_x = wire.e3(x.get_phi());
@@ -40,7 +40,14 @@ public:
         valarray<double> de2 = s*cos(theta)*e2-x.get_s()*cos(x.get_theta())*e2_x;
         valarray<double> de3 = s*sin(theta)*e3-x.get_s()*sin(x.get_theta())*e3_x;
 
-        return vector_norm(dr+de2+de3);
+        return dr+de2+de3;
+    }
+
+    /*
+     * Return the Cartesian distance between this Point and the Point 'x'.
+     */
+    double distance(Point x){
+        return vector_norm(vec_distance(x));
     }
 
     Wire get_wire(){return wire;}

@@ -310,10 +310,9 @@ public:
      * This function returns the value of the vector norm of the curvature.
      */
     double kappa(double phi){
-        double norm = rc_norm_firstder(phi);
         valarray<double> first_der = rc_firstder(phi);
         valarray<double> second_der = r_c_second_der(phi);
-        return vector_norm(cross_product(first_der,second_der))/pow(norm,3);
+        return vector_norm(cross_product(first_der,second_der))/pow(vector_norm(first_der),3);
     }
 
     /*
@@ -330,9 +329,11 @@ public:
      * Cartesian components are returned.
      */
     valarray<double> e2(double phi) {
+        valarray<double> first_der = rc_firstder(phi);
         valarray<double> second_der = r_c_second_der(phi);
-        double norm_second_der=vector_norm(second_der);
-        return second_der/norm_second_der;
+        valarray<double> numerator = cross_product(first_der, cross_product(second_der,first_der));
+        double denominator = vector_norm(first_der)*vector_norm(cross_product(second_der,first_der));
+        return numerator/denominator;
     }
 
     /*

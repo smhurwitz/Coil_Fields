@@ -31,12 +31,18 @@ static int b_integrand(const int *ndim, const cubareal xx[],
     int axis = u->axis;
     Wire wire = u->r.get_wire();
     Point r = u->r;
-    Point r_prime(r.get_wire().get_a()*xx[0], 2*M_PI*xx[1], 2*M_PI*xx[2], wire);
 
-    valarray<double> e1 = wire.e1(r_prime.get_phi());
-    double curvature = wire.kappa(r_prime.get_phi());
-    double jacobian = r_prime.get_s()*(1-curvature*r_prime.get_s()*cos(r_prime.get_theta()))
-                      * wire.rc_norm_firstder(r_prime.get_phi());
+    double theta = r.get_theta();
+    double phi = r.get_phi();
+    double s_p = r.get_wire().get_a()*xx[0];
+    double theta_p = 2*M_PI*xx[1]+theta; //shift domain such that singularity is on boundary
+    double phi_p = 2*M_PI*xx[2]+phi; //shift domain such that singularity is on boundary
+
+    Point r_prime(s_p, theta_p, phi_p, wire);
+
+    valarray<double> e1 = wire.e1(phi_p);
+    double curvature = wire.kappa(phi_p);
+    double jacobian = s_p*(1-curvature*s_p*cos(theta_p))*wire.rc_norm_firstder(phi_p);
 
     double denominator = pow(r_prime.distance(r)+1e-100,3);
     double numerator;
@@ -46,6 +52,7 @@ static int b_integrand(const int *ndim, const cubareal xx[],
 
     ff[0] = jacobian*numerator/denominator; //integrand to return
 }
+
 
 /*
  * This high-fidelity method returns the value of the magnetic field at a Point r along an axis {x,y,z} corresponding to
@@ -60,7 +67,7 @@ double b(Point r, int axis, double epsrel, double epsabs){
 
     double prefactors = r.get_wire().get_I()*mu_0/r.get_wire().get_a();
     Cuhre(3, 1, b_integrand, &data, 1, epsrel, epsabs, 0,0,
-          1e8, 1,nullptr, nullptr,&nregions, &neval, &fail, integral,
+          1000000000, 1,nullptr, nullptr,&nregions, &neval, &fail, integral,
           error, prob);
     double result = prefactors*integral[0];
     return result;
@@ -157,7 +164,7 @@ double b_1D(Point r, int axis){
 
     //Extra terms in solution for B
     valarray<double> b_extra=-s*s/(a*a*2)*sin(2*theta)* coil.e2(phi)
-            + (0.75 + s * s / (a * a) * (cos(2 * theta) / 2 - 1) * coil.e3(phi));
+            + (1.5 + s * s / (a * a) * (cos(2 * theta) / 2 - 1) * coil.e3(phi));
     b_extra*= mu_0 * coil.get_I() * coil.kappa(phi) / (8 * M_PI);
 
     if(axis==0){return b_cylinder[0] + b_extra[0] + b_reg(coil, phi, 0, 3, -1);}
@@ -182,9 +189,9 @@ double neg_modB (const gsl_vector *v, void *params)
     double theta = gsl_vector_get(v, 1);
 
     Point r(s, theta, phi, wire);
-    double bx = b(r, 0, 1e-5, 1e-5);
-    double by = b(r, 1, 1e-5, 1e-5);
-    double bz = b(r, 2, 1e-5, 1e-5);
+    double bx = b(r, 0, 1e-4, 1e-4);
+    double by = b(r, 1, 1e-4, 1e-4);
+    double bz = b(r, 2, 1e-4, 1e-4);
 
     return -sqrt(bx*bx + by*by + bz*bz);
 }
@@ -253,15 +260,21 @@ double max_modB_fullyanalytic(Wire wire, double phi){
     double b2 = dot_product(b_cartesian, wire.e2(phi));
     double b3 = dot_product(b_cartesian, wire.e3(phi));
     double b_par = sqrt(b2*b2 + b3*b3); //definition of b_parallel
+//
+//    //finding the maximum magnetic field
+//    double term1 = b1;
+//    double term2 = b2+mu_0*wire.get_I()/(2*M_PI*wire.get_a())*(b2/b_par+
+//            wire.kappa(phi) * wire.get_a() * b2 * b3 / (4 * b_par * b_par));
+//    double term3 = b3+mu_0*wire.get_I()/(2*M_PI*wire.get_a())*(b3/b_par+
+//            wire.kappa(phi) * wire.get_a() * b3 * b3/ (4 *b_par * b_par));
+//    return sqrt(term1*term1 + term2*term2 + term3*term3);
+    double theta = -atan2(b2,b3);
+    double term1 = b_1D(Point(wire.get_a(),theta,phi,wire),0);
+    double term2 = b_1D(Point(wire.get_a(),theta,phi,wire),1);
+    double term3 = b_1D(Point(wire.get_a(),theta,phi,wire),2);
+        return sqrt(term1*term1 + term2*term2 + term3*term3);
 
-    //finding the maximum magnetic field
-    double term1 = b1;
-    double term2 = b2+mu_0*wire.get_I()/(2*M_PI*wire.get_a())*(b2/b_par+
-            wire.kappa(phi) * wire.get_a() * b2 * b3 / (8 * b_par * b_par));
-    double term3 = b3+mu_0*wire.get_I()/(2*M_PI*wire.get_a())*(b3/b_par+
-            wire.kappa(phi) * wire.get_a() / 8 * (-0.5 + (b3 * b3 - b2 * b2) / (b_par * b_par)));
 
-    return sqrt(term1*term1 + term2*term2 + term3*term3);
 }
 
 /*
