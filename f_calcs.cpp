@@ -1,5 +1,3 @@
-
-
 #include "b_calcs.cpp"
 #include <functional>
 using namespace std;
@@ -33,7 +31,7 @@ static int f_integrand(const int *ndim, const cubareal xx[],
     valarray<double> e1 = wire.e1(phi);
     valarray<double> numerator = cross_product(e1,cross_product(wire.rc_firstder(phi_p), r.vec_distance(r_p)));
 
-    ff[0] = (wire.get_a()*wire.get_a())*(num1 * numerator[axis] / denominator);
+    ff[0] = (num1 * numerator[axis] / denominator);
 }
 
 /*
@@ -51,8 +49,7 @@ double f(Wire wire, double phi, int axis, double epsrel, double epsabs){
     Cuhre(5, 1, f_integrand, &data, 1, epsrel, epsabs, 0,0,
           1000000000, 0,nullptr, nullptr,&nregions, &neval, &fail, integral,
           error, prob);
-    cout << neval << endl;
-    double prefactors =(2*mu_0*pow(wire.get_I(),2)/(wire.get_a()*wire.get_a()))/(wire.get_a()*wire.get_a());
+    double prefactors =(2*mu_0*pow(wire.get_I(),2)/(wire.get_a()*wire.get_a()));
     return prefactors*integral[0];
 }
 

@@ -242,6 +242,13 @@ public:
 
     double get_a(){return a;}
     double get_I(){return I;}
+    int get_order(){return order;}
+    valarray<double> get_xc_coeff(){return xc_coeff;}
+    valarray<double> get_yc_coeff(){return yc_coeff;}
+    valarray<double> get_zc_coeff(){return zc_coeff;}
+    valarray<double> get_xs_coeff(){return xs_coeff;}
+    valarray<double> get_ys_coeff(){return ys_coeff;}
+    valarray<double> get_zs_coeff(){return zs_coeff;}
 
     /*
      * This function gives the value of r_c(phi) in terms of the Cartesian components, [r_c^(x), r_c^(y), rc^(z)].
@@ -354,5 +361,21 @@ public:
         gsl_integration_qags(len_integrand, 0, 2*M_PI, 1e-8, 1e-8,
                              100,IntegrationWorkspace(100),&result, &abserr);
         return result;
+    }
+
+    /*
+     * This function returns the approximate minor radius, a, at which the coil would self-intersect. N is the
+     * number of sample points.
+     */
+    double a_self_intersect(int N=10000){
+        double a_min;
+        for(int i=0; i<N; i++){
+            double phi=2*M_PI*i/N;
+            double curv = kappa(phi);
+            if(i == 0 or 1/curv < a_min){
+                a_min = 1/curv;
+            }
+        }
+        return a_min;
     }
 };

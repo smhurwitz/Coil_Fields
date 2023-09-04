@@ -67,7 +67,7 @@ double b(Point r, int axis, double epsrel, double epsabs){
 
     double prefactors = r.get_wire().get_I()*mu_0/r.get_wire().get_a();
     Cuhre(3, 1, b_integrand, &data, 1, epsrel, epsabs, 0,0,
-          1000000000, 1,nullptr, nullptr,&nregions, &neval, &fail, integral,
+          100000000, 1,nullptr, nullptr,&nregions, &neval, &fail, integral,
           error, prob);
     double result = prefactors*integral[0];
     return result;
@@ -93,7 +93,7 @@ double b_reg(Wire wire, double phi, int axis, int key, int n_points) {
             valarray<double> vector_difference = wire.rc(phi) - wire.rc(phi_prime);
             double numerator = cross_product(wire.rc_firstder(phi_prime), vector_difference)[axis];
             double denominator = pow(pow(vector_norm(vector_difference),2)
-                    + pow(wire.get_a(),2)/sqrt(M_E),1.5);
+                                     +pow(wire.get_a(),2)*exp(-0.5),1.5);
             return numerator/denominator;
         });
         result = gsl_integration_glfixed(b_approx, phi, phi+2*M_PI,
@@ -136,8 +136,8 @@ double b_reg(Wire wire, double phi, int axis, int key, int n_points) {
         });
 
         double abserr;
-        gsl_integration_qags(b_approx, phi, phi+2*M_PI, 1e-8, 1e-8,
-                             100,IntegrationWorkspace(100),&result, &abserr);
+        gsl_integration_qags(b_approx, phi, phi+2*M_PI, 1e-10, 1e-10,
+                             100000000,IntegrationWorkspace(100000000),&result, &abserr);
     }
     else{throw std::invalid_argument( "key must be in {1,2,3}");}
 
@@ -157,19 +157,34 @@ double b_1D(Point r, int axis){
     double theta = r.get_theta();
     double phi = r.get_phi();
 
-    if(s>a){throw std::invalid_argument( "s must be <= a");}
+    if(s<=a){
+        //Infinite cylinder solution for B
+        valarray<double> b_cylinder=mu_0*coil.get_I()*s/(2*M_PI*a*a)*(-sin(theta)* coil.e2(phi) + cos(theta) * coil.e3(phi));
 
-    //Infinite cylinder solution for B
-    valarray<double> b_cylinder=mu_0*coil.get_I()*s/(2*M_PI*a*a)*(-sin(theta)* coil.e2(phi) + cos(theta) * coil.e3(phi));
+        //Extra terms in solution for B
+        valarray<double> b_extra=-s*s/(a*a*2)*sin(2*theta)* coil.e2(phi)
+                                 + (1.5 + s * s / (a * a) * (cos(2 * theta) / 2 - 1)) * coil.e3(phi);
+        b_extra*= mu_0 * coil.get_I() * coil.kappa(phi) / (8 * M_PI);
 
-    //Extra terms in solution for B
-    valarray<double> b_extra=-s*s/(a*a*2)*sin(2*theta)* coil.e2(phi)
-            + (1.5 + s * s / (a * a) * (cos(2 * theta) / 2 - 1) * coil.e3(phi));
-    b_extra*= mu_0 * coil.get_I() * coil.kappa(phi) / (8 * M_PI);
+        if(axis==0){return b_cylinder[0] + b_extra[0] + b_reg(coil, phi, 0, 3, -1);}
+        else if(axis == 1){return b_cylinder[1] + b_extra[1] + b_reg(coil, phi, 1, 3, -1);}
+        else{return b_cylinder[2] + b_extra[2] + b_reg(coil, phi, 2, 3, -1);}
+    }
+    else{
+        //Infinite cylinder solution for B
+        valarray<double> b_cylinder=mu_0*coil.get_I()/(2*M_PI*s)*(-sin(theta)* coil.e2(phi) + cos(theta) * coil.e3(phi));
 
-    if(axis==0){return b_cylinder[0] + b_extra[0] + b_reg(coil, phi, 0, 3, -1);}
-    else if(axis == 1){return b_cylinder[1] + b_extra[1] + b_reg(coil, phi, 1, 3, -1);}
-    else{return b_cylinder[2] + b_extra[2] + b_reg(coil, phi, 2, 3, -1);}
+        //Extra terms in solution for B
+        valarray<double> b_extra=(a*a/(s*s*2)-1)*sin(2*theta)* coil.e2(phi)
+                                 + (0.5 - 2*log(s/a)+ (-a*a/(s*s*2)+1)*cos(2*theta)) * coil.e3(phi);
+        b_extra*= mu_0 * coil.get_I() * coil.kappa(phi) / (8 * M_PI);
+
+        if(axis==0){return b_cylinder[0] + b_extra[0] + b_reg(coil, phi, 0, 3, -1);}
+        else if(axis == 1){return b_cylinder[1] + b_extra[1] + b_reg(coil, phi, 1, 3, -1);}
+        else{return b_cylinder[2] + b_extra[2] + b_reg(coil, phi, 2, 3, -1);}
+    }
+
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -189,9 +204,9 @@ double neg_modB (const gsl_vector *v, void *params)
     double theta = gsl_vector_get(v, 1);
 
     Point r(s, theta, phi, wire);
-    double bx = b(r, 0, 1e-4, 1e-4);
-    double by = b(r, 1, 1e-4, 1e-4);
-    double bz = b(r, 2, 1e-4, 1e-4);
+    double bx = b(r, 0, 5*1e-4, 5*1e-4);//originally 1e-4
+    double by = b(r, 1, 5*1e-4, 5*1e-4);
+    double bz = b(r, 2, 5*1e-4, 5*1e-4);
 
     return -sqrt(bx*bx + by*by + bz*bz);
 }
@@ -260,19 +275,12 @@ double max_modB_fullyanalytic(Wire wire, double phi){
     double b2 = dot_product(b_cartesian, wire.e2(phi));
     double b3 = dot_product(b_cartesian, wire.e3(phi));
     double b_par = sqrt(b2*b2 + b3*b3); //definition of b_parallel
-//
-//    //finding the maximum magnetic field
-//    double term1 = b1;
-//    double term2 = b2+mu_0*wire.get_I()/(2*M_PI*wire.get_a())*(b2/b_par+
-//            wire.kappa(phi) * wire.get_a() * b2 * b3 / (4 * b_par * b_par));
-//    double term3 = b3+mu_0*wire.get_I()/(2*M_PI*wire.get_a())*(b3/b_par+
-//            wire.kappa(phi) * wire.get_a() * b3 * b3/ (4 *b_par * b_par));
-//    return sqrt(term1*term1 + term2*term2 + term3*term3);
+
     double theta = -atan2(b2,b3);
     double term1 = b_1D(Point(wire.get_a(),theta,phi,wire),0);
     double term2 = b_1D(Point(wire.get_a(),theta,phi,wire),1);
     double term3 = b_1D(Point(wire.get_a(),theta,phi,wire),2);
-        return sqrt(term1*term1 + term2*term2 + term3*term3);
+    return sqrt(term1*term1 + term2*term2 + term3*term3);
 
 
 }
