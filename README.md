@@ -1,7 +1,7 @@
 # Coil_Fields
-This code contains a number of methods to compute important quantities such as the self-force, self-inductance, and magnetic field for HSX coils and circular coils with circular cross-sections. (It should be easily adapted for any coil with circular cross-section described with a Fourier representation). All formulas referenced are found or can be determined from those presented in (Hurwitz, Landreman, and Antonsen; 2023). 
+This code contains a number of methods to compute important quantities such as the self-force, self-inductance, and magnetic field for HSX coils and circular coils with circular cross-sections. (It should be easily adapted for any coil with circular cross-section described with a Fourier representation). All formulas referenced are found or can be determined from those presented in (Hurwitz, Landreman, and Antonsen; 2023). The code also contains a number of routines in "data_visualization.cpp" to export data to text files for plotting purposes. 
 
-The code also contains a number of routines in "data_visualization.cpp" to export data to text files for plotting purposes. The file breakdown is as follows:
+The file breakdown is as follows:
 
 -"b_calcs.cpp" contains hifi and lofi methods for calculating the magnetic field
 -"f_calcs.cpp" contains hifi and lofi methods for calculation the self-force
