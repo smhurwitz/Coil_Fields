@@ -150,7 +150,7 @@ double b_reg(Wire wire, double phi, int axis, int key, int n_points) {
  * corresponding to an int {0,1,2}, respectively. This method automatically uses an adaptive integration routine.
  * NOTE: if s>a, the method throws an error.
  */
-double b_1D(Point r, int axis){
+double b_1D(Point r, int axis, int key=3, int n_points=-1){
     Wire coil = r.get_wire();
     double a = coil.get_a();
     double s = r.get_s();
@@ -166,9 +166,9 @@ double b_1D(Point r, int axis){
                                  + (1.5 + s * s / (a * a) * (cos(2 * theta) / 2 - 1)) * coil.e3(phi);
         b_extra*= mu_0 * coil.get_I() * coil.kappa(phi) / (8 * M_PI);
 
-        if(axis==0){return b_cylinder[0] + b_extra[0] + b_reg(coil, phi, 0, 3, -1);}
-        else if(axis == 1){return b_cylinder[1] + b_extra[1] + b_reg(coil, phi, 1, 3, -1);}
-        else{return b_cylinder[2] + b_extra[2] + b_reg(coil, phi, 2, 3, -1);}
+        if(axis==0){return b_cylinder[0] + b_extra[0] + b_reg(coil, phi, 0, key, n_points);}
+        else if(axis == 1){return b_cylinder[1] + b_extra[1] + b_reg(coil, phi, 1, key, n_points);}
+        else{return b_cylinder[2] + b_extra[2] + b_reg(coil, phi, 2, key, n_points);}
     }
     else{
         //Infinite cylinder solution for B
@@ -179,9 +179,9 @@ double b_1D(Point r, int axis){
                                  + (0.5 - 2*log(s/a)+ (-a*a/(s*s*2)+1)*cos(2*theta)) * coil.e3(phi);
         b_extra*= mu_0 * coil.get_I() * coil.kappa(phi) / (8 * M_PI);
 
-        if(axis==0){return b_cylinder[0] + b_extra[0] + b_reg(coil, phi, 0, 3, -1);}
-        else if(axis == 1){return b_cylinder[1] + b_extra[1] + b_reg(coil, phi, 1, 3, -1);}
-        else{return b_cylinder[2] + b_extra[2] + b_reg(coil, phi, 2, 3, -1);}
+        if(axis==0){return b_cylinder[0] + b_extra[0] + b_reg(coil, phi, 0, key, n_points);}
+        else if(axis == 1){return b_cylinder[1] + b_extra[1] + b_reg(coil, phi, 1, key, n_points);}
+        else{return b_cylinder[2] + b_extra[2] + b_reg(coil, phi, 2, key, n_points);}
     }
 
 

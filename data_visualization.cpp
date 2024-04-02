@@ -269,6 +269,24 @@ void L_2D_convergence_plots(string name, int N_hi, Wire w){
 int main(){
     auto begin = std::chrono::high_resolution_clock::now(); //tracking how long code runs
 
+    int N = 1e4;
+    for (int n=0; n<N; n++){
+        double R = 0.001; 
+        double a = R * 0.01;
+        double I = 1;
+        Wire torus = Wire::torus(R, a, I);
+        Point p(a, 0, 0, torus);
+        double bx = b_1D(p, 0, 2, 0);
+        double by = b_1D(p, 1, 2, 0);
+        double bz = b_1D(p, 2, 2, 0);
+        double modb = sqrt(bx * bx + by * by + bz * bz);
+        // cout << modb << endl;
+    }
+
+    // double bx = b(p, 0, 1e-3, 1e-5);
+    // double by = b(p, 1, 1e-3, 1e-5);
+    // double bz = b(p, 2, 1e-3, 1e-5);
+
 //    EXAMPLE CODE (note that length/(2*pi)=R=0.326955182 for the first HSX coil):
 
 //    force_plots(Wire::hsx(0.326955182*0.01, 1e6, 1), 0, 200, "f", 0,1e-9, 1e-9); // self-force data
@@ -285,4 +303,5 @@ int main(){
     auto end = std::chrono::high_resolution_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
     printf("Time measured: %.3f seconds.\n", elapsed.count() * 1e-9);
+    printf("Time per field evaluation: %.4e seconds.\n", elapsed.count() * 1e-9 / N);
 }
