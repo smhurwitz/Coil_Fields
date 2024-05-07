@@ -8,12 +8,13 @@ using namespace std;
 class Point{
 private:
     double s, theta, phi; //Frenet-Serret representation of the point
-    double x, y, z; //alternative Cartesian representation of the point
+    
     valarray<double> vec_rep; //Cartesian vector representation, i.e. [x, y, z]
     Wire wire;
 
 public:
     Point(){};
+    double x, y, z; //alternative Cartesian representation of the point
     Point(double s, double theta, double phi, Wire wire){
         this->s=s;
         this->theta=theta;

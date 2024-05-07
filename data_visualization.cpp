@@ -267,21 +267,43 @@ void L_2D_convergence_plots(string name, int N_hi, Wire w){
  * Gives some example code for computing data on important quantities such as self-force and self-inductance.
  */
 int main(){
-    auto begin = std::chrono::high_resolution_clock::now(); //tracking how long code runs
+    // auto begin = std::chrono::high_resolution_clock::now(); //tracking how long code runs
 
-    int N = 1e4;
+    // // Calculations for a torus
+    // int N = 1e4;
+    // for (int n=0; n<N; n++){
+    //     double R = 0.001; 
+    //     double a = R * 0.01;
+    //     double I = 1;
+    //     Wire torus = Wire::torus(R, a, I);
+    //     Point p(a, 0, 0, torus);
+    //     double bx = b_1D(p, 0, 2, 0);
+    //     double by = b_1D(p, 1, 2, 0);
+    //     double bz = b_1D(p, 2, 2, 0);
+    //     double modb = sqrt(bx * bx + by * by + bz * bz);
+    //     // cout << modb << endl;
+    // }
+
+    // Calculations for an elliptical torus
+    int N = 1e0;
     for (int n=0; n<N; n++){
-        double R = 0.001; 
-        double a = R * 0.01;
-        double I = 1;
-        Wire torus = Wire::torus(R, a, I);
-        Point p(a, 0, 0, torus);
-        double bx = b_1D(p, 0, 2, 0);
-        double by = b_1D(p, 1, 2, 0);
-        double bz = b_1D(p, 2, 2, 0);
+        double a = 0.01;
+        Wire hsx = Wire::hsx(a, 1e6, 1);
+        Point p(a, 0, 0, hsx);
+        // double bx = b_1D(p, 0);
+        // double by = b_1D(p, 1);
+        // double bz = b_1D(p, 2);
+        double n_points = 1000;
+        double bx = b_1D(p, 0, 2, n_points);
+        double by = b_1D(p, 1, 2, n_points);
+        double bz = b_1D(p, 2, 2, n_points);
         double modb = sqrt(bx * bx + by * by + bz * bz);
-        // cout << modb << endl;
+        cout << modb << endl;
+        cout << std::to_string(p.get_x()) + ", "  + std::to_string(p.get_y()) + ", " +  std::to_string(p.get_z()) << endl;
     }
+
+
+
 
     // double bx = b(p, 0, 1e-3, 1e-5);
     // double by = b(p, 1, 1e-3, 1e-5);
@@ -300,8 +322,8 @@ int main(){
 //    circ_fit_comp(0.326955182/100,1e6,"circ_fit",600); //comparison between circular fit methods
 
     //tracking how long code ran:
-    auto end = std::chrono::high_resolution_clock::now();
-    auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
-    printf("Time measured: %.3f seconds.\n", elapsed.count() * 1e-9);
-    printf("Time per field evaluation: %.4e seconds.\n", elapsed.count() * 1e-9 / N);
+    // auto end = std::chrono::high_resolution_clock::now();
+    // auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
+    // printf("Time measured: %.3f seconds.\n", elapsed.count() * 1e-9);
+    // printf("Time per field evaluation: %.4e seconds.\n", elapsed.count() * 1e-9 / N);
 }

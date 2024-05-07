@@ -48,6 +48,14 @@ public:
                                    {0,R}, {0,0}, {0,0});
     }
 
+     /*
+     * This function returns the Wire representation of an ellptical torus of 
+     * semi-major and minor axes a and b, with a circular cross-section of radius r.
+     */
+    static Wire elliptical_torus(double a, double b, double r, double I){
+        return Wire(I, r, 2, {0, a}, {0,0}, {0,0}, {0,b}, {0,0}, {0,0});
+    }
+
     /*
      * This function returns the Wire representation of a HSX coil obtained from SIMSOPT. There are 6 coils provided,
      * and coil_number=1,...,6 can select which coil to use. The SIMSOPT representation is further detailed in
