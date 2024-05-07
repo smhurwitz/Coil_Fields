@@ -1,0 +1,9 @@
+*.sh
+CMake*
+*.json
+CoilCalculations
+.DS_Store
+*.ninja*
+build.ninja
+*.cmake
+CMakeCache.txt
