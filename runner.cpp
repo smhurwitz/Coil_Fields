@@ -265,7 +265,7 @@ void L_2D_convergence_plots(string name, int N_hi, Wire w){
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////// TIMING COMPARISONS /////////////////////////////////////////////////////
 /*
- * This method exports to a .txt file a set of (x,y,z) grid points on which to
+ * This method exports to a .pts file a set of (x,y,z) grid points on which to
  * evaluate the magnetic field
  */
 void gen_grid(string name, int N, Wire w){
@@ -291,6 +291,37 @@ void gen_grid(string name, int N, Wire w){
     fclose(fp);
 }
 
+/*
+ * This method exports to a .fld file a set of (x,y,z, Bx, By, Bz). By default
+ * it calculates the field with an adaptive integral routine, though setting 
+ * `key=2` and specifying the number of quadrature points allows for calculation
+ * with the Gauss-Legendre method.
+ */
+void b_on_grid(string name, int N, Wire w, int key=3, int n_points=-1){
+    FILE *fp;
+    fp = fopen(name.c_str(),"w");
+    fprintf(fp, "Vector data '<Bx,By,Bz>'\n");
+    for(int i=0; i<N; i++){
+        for(int j=0; j<N; j++){
+                for(int k=0; k<N; k++){
+                double u = w.get_a()*(2*i/N-1);
+                double v = w.get_a()*(2*j/N-1);
+                double s = sqrt(u*u + v*v);
+                double theta = atan2(v, u);
+                double phi = 2*k*M_PI/N;
+                if (s <= w.get_a()){
+                    Point p(s, theta, phi, w);
+                    double bx = b_1D(p,0,key,n_points);
+                    double by = b_1D(p,1,key,n_points);
+                    double bz = b_1D(p,2,key,n_points);
+                    double modb = sqrt(bx * bx + by * by + bz * bz);
+                    fprintf(fp, "%f %f %f %f %f %f\n", p.get_x(), p.get_y(), p.get_z(), bx, by, bz);
+                }
+            }
+        }
+    }
+    fclose(fp); 
+} 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*
@@ -299,37 +330,6 @@ void gen_grid(string name, int N, Wire w){
 int main(){
     // auto begin = std::chrono::high_resolution_clock::now(); //tracking how long code runs
 
-
-    // // Calculations for an elliptical torus
-    // int N = 1e0;
-    // for (int n=0; n<N; n++){
-    //     double a = 0.01;
-    //     Wire hsx = Wire::hsx(a, 1e6, 1);
-    //     Point p(a, 0, 0, hsx);
-    //     // double bx = b_1D(p, 0);
-    //     // double by = b_1D(p, 1);
-    //     // double bz = b_1D(p, 2);
-    //     double n_points = 1000;
-    //     double bx = b_1D(p, 0, 2, n_points);
-    //     double by = b_1D(p, 1, 2, n_points);
-    //     double bz = b_1D(p, 2, 2, n_points);
-    //     double modb = sqrt(bx * bx + by * by + bz * bz);
-    //     cout << modb << endl;
-    //     cout << std::to_string(p.get_x()) + ", "  + std::to_string(p.get_y()) + ", " +  std::to_string(p.get_z()) << endl;
-    // }
-
-
-
-
-    // double bx = b(p, 0, 1e-3, 1e-5);
-    // double by = b(p, 1, 1e-3, 1e-5);
-    // double bz = b(p, 2, 1e-3, 1e-5);
-
-//    EXAMPLE CODE (note that length/(2*pi)=R=0.326955182 for the first HSX coil):
-
-//    circ_fit_comp(0.326955182/100,1e6,"circ_fit",600); //comparison between circular fit methods
-
-    gen_grid("grid", 20, Wire::hsx(0.01, 1e6, 1)); //generate grid for timing comparison
 
     //tracking how long code ran:
     // auto end = std::chrono::high_resolution_clock::now();

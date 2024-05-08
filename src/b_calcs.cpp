@@ -76,7 +76,7 @@ double b(Point r, int axis, double epsrel, double epsabs){
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////// LO-FI ////////////////////////////////////////////////////////////
 /*
- * This method returns the 1D regularized Biot-Savart Law along an axis {x,y,z} corresponding to an int {0,1,2},
+ * This method returns the 1D regularized Biot-Savart Law along an axis {x,y,z} corresponding to an int {1,2,3},
  * respectively. This method evaluates the 1D integral in one of three ways:
  *      (1) applying Gauss-Legendre integration to the unmodified integral,
  *      (2) applying Gauss-Legendre integration to the modified integral, or
@@ -148,7 +148,6 @@ double b_reg(Wire wire, double phi, int axis, int key, int n_points) {
 /*
  * This method returns the 1D integral solution for the magnetic field at a Point 'r' if s<=a along an axis {x,y,z}
  * corresponding to an int {0,1,2}, respectively. This method automatically uses an adaptive integration routine.
- * NOTE: if s>a, the method throws an error.
  */
 double b_1D(Point r, int axis, int key=3, int n_points=-1){
     Wire coil = r.get_wire();
