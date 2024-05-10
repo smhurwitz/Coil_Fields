@@ -268,20 +268,20 @@ void L_2D_convergence_plots(string name, int N_hi, Wire w){
  * This method exports to a .pts file a set of (x,y,z) grid points on which to
  * evaluate the magnetic field
  */
-void gen_grid(string name, int N, Wire w){
+void gen_grid(string name, Wire w){
     FILE *fp;
     name = name + ".pts";
     fp = fopen(name.c_str(),"w");
-    
+    int N=35;
     for(int i=0; i<N; i++){
         for(int j=0; j<N; j++){
                 for(int k=0; k<N; k++){
-                double u = w.get_a()*(2*i/N-1);
-                double v = w.get_a()*(2*j/N-1);
+                double u = w.get_a()*(2.0*i/N-1);
+                double v = w.get_a()*(2.0*j/N-1);
                 double s = sqrt(u*u + v*v);
                 double theta = atan2(v, u);
                 double phi = 2*k*M_PI/N;
-                if (s <= w.get_a()){
+                if (s < w.get_a()){
                     Point p(s, theta, phi, w);
                     fprintf(fp, "%f\t%f\t%f\n", p.get_x(), p.get_y(), p.get_z());
                 }
@@ -297,19 +297,20 @@ void gen_grid(string name, int N, Wire w){
  * `key=2` and specifying the number of quadrature points allows for calculation
  * with the Gauss-Legendre method.
  */
-void b_on_grid(string name, int N, Wire w, int key=3, int n_points=-1){
+void b_on_grid(string name, Wire w, int key=3, int n_points=-1){
     FILE *fp;
+    int N = 35;
     fp = fopen(name.c_str(),"w");
     fprintf(fp, "Vector data '<Bx,By,Bz>'\n");
     for(int i=0; i<N; i++){
         for(int j=0; j<N; j++){
                 for(int k=0; k<N; k++){
-                double u = w.get_a()*(2*i/N-1);
-                double v = w.get_a()*(2*j/N-1);
+                double u = w.get_a()*(2.0*i/N-1);
+                double v = w.get_a()*(2.0*j/N-1);
                 double s = sqrt(u*u + v*v);
                 double theta = atan2(v, u);
                 double phi = 2*k*M_PI/N;
-                if (s <= w.get_a()){
+                if (s < w.get_a()){
                     Point p(s, theta, phi, w);
                     double bx = b_1D(p,0,key,n_points);
                     double by = b_1D(p,1,key,n_points);
@@ -329,7 +330,6 @@ void b_on_grid(string name, int N, Wire w, int key=3, int n_points=-1){
  */
 int main(){
     // auto begin = std::chrono::high_resolution_clock::now(); //tracking how long code runs
-
 
     //tracking how long code ran:
     // auto end = std::chrono::high_resolution_clock::now();
