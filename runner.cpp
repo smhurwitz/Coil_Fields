@@ -332,37 +332,10 @@ void b_on_grid(string name, Wire w, int key=3, int n_points=-1){
 int main(){
     auto begin = std::chrono::high_resolution_clock::now(); //tracking how long code runs
 
-    int M = 10;
-    int N = 25;
-    int n_points = 5;
-    Wire w = Wire::hsx(0.01*0.326955182, 1e6, 1);
-
-    for(int m=0; m<M; m++){
-        for(int i=0; i<N; i++){
-            for(int j=0; j<N; j++){
-                    for(int k=0; k<N; k++){
-                    double u = w.get_a()*(2.0*i/N-1);
-                    double v = w.get_a()*(2.0*j/N-1);
-                    double s = sqrt(u*u + v*v);
-                    double theta = atan2(v, u);
-                    double phi = 2*k*M_PI/N;
-                    if (s < w.get_a()){
-                        Point p(s, theta, phi, w);
-                        double bx = b_1D(p,0,2,n_points);
-                        double by = b_1D(p,1,2,n_points);
-                        double bz = b_1D(p,2,2,n_points);
-                        double modb = sqrt(bx * bx + by * by + bz * bz);
-                    }
-                }
-            }
-        }
-    }
+    // insert code here
 
     //tracking how long code ran:
     auto end = std::chrono::high_resolution_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
-    double t_total = elapsed.count() * 1e-9;
-    double t_point = t_total / (25 * 25 * 25 * M);
     printf("Time measured: %.3f seconds.\n", t_total);
-    printf("This corresponds to %.3e seconds per point", t_point);
 }
